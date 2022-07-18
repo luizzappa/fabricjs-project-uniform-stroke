@@ -85,15 +85,24 @@
     _setPositionDimensions: function(options) {
       options || (options = {});
       var calcDim = this._calcDimensions(options), correctLeftTop,
-          correctSize = this.exactBoundingBox ? this.strokeWidth : 0;
-      this.width = calcDim.width - correctSize;
-      this.height = calcDim.height - correctSize;
+          correctSizeX = this.exactBoundingBox
+                        ? this.strokeUniform
+                          ? this.strokeWidth/this.scaleX
+                          : this.strokeWidth
+                        : 0,
+          correctSizeY = this.exactBoundingBox
+                        ? this.strokeUniform
+                          ? this.strokeWidth/this.scaleY
+                          : this.strokeWidth
+                        : 0;
+      this.width = calcDim.width - correctSizeX
+      this.height = calcDim.height - correctSizeY
       if (!options.fromSVG) {
         correctLeftTop = this.translateToGivenOrigin(
           {
             // this looks bad, but is one way to keep it optional for now.
-            x: calcDim.left - this.strokeWidth / 2 + correctSize / 2,
-            y: calcDim.top - this.strokeWidth / 2 + correctSize / 2
+            x: calcDim.left - this.strokeWidth  + correctSizeX / 2,
+            y: calcDim.top - this.strokeWidth + correctSizeY / 2
           },
           'left',
           'top',
@@ -108,8 +117,8 @@
         this.top = options.fromSVG ? calcDim.top : correctLeftTop.y;
       }
       this.pathOffset = {
-        x: calcDim.left + this.width / 2 + correctSize / 2,
-        y: calcDim.top + this.height / 2 + correctSize / 2
+        x: calcDim.left + this.width / 2 + correctSizeX / 2,
+        y: calcDim.top + this.height / 2 + correctSizeY / 2
       };
     },
 
@@ -196,7 +205,16 @@
       for (var i = 0; i < len; i++) {
         point = this.points[i];
         ctx.lineTo(point.x - x, point.y - y);
+        console.log('commonRender =>>', 'point.x', point.x, 'point.y', point.y, 'x', x, 'y', y, 'result point', point.x - x, point.y -y)
       }
+
+      // ctx.stroke();
+      // ctx.beginPath();
+      // const radius = 10
+      // ctx.arc(this.points[0].x, this.points[0].y, radius, 0, 2 * Math.PI, false);
+      // ctx.fillStyle = 'green';
+      // ctx.fill();
+
       return true;
     },
 

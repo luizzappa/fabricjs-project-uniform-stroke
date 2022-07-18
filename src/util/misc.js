@@ -219,14 +219,25 @@
      * @returns {fabric.Point[]} array of size 2n/4n of all suspected points
      */
     projectStrokeOnPoints: function (points, options, openPath) {
+      console.log('points', points, 'options', options, 'openPath', openPath)
+      console.log('options.strokeUniform', options.strokeUniform)
       var coords = [], s = options.strokeWidth / 2,
           strokeUniformScalar = options.strokeUniform ?
+            // new fabric.Point(1 / (options.scaleX + options.strokeWidth/(2*options.width)), 1 / (options.scaleY + options.strokeWidth/(2*options.width))) : new fabric.Point(1, 1),
             new fabric.Point(1 / options.scaleX, 1 / options.scaleY) : new fabric.Point(1, 1),
+            // new fabric.Point(1, 1) : new fabric.Point(1, 1),
           getStrokeHatVector = function (v) {
             var scalar = s / (Math.hypot(v.x, v.y));
             return new fabric.Point(v.x * scalar * strokeUniformScalar.x, v.y * scalar * strokeUniformScalar.y);
           };
+      console.log('s', s)
       if (points.length <= 1) {return coords;}
+      // points = points.map(p => {
+      //   console.log('p', p)
+      //   p.x *= options.scaleX
+      //   p.y *= options.scaleY
+      //   return p
+      // })
       points.forEach(function (p, index) {
         var A = new fabric.Point(p.x, p.y), B, C;
         if (index === 0) {
@@ -241,13 +252,29 @@
           B = points[index - 1];
           C = points[index + 1];
         }
-        var bisector = fabric.util.getBisector(A, B, C),
-            bisectorVector = bisector.vector,
+
+        var bisector
+        if (options.strokeUniform) {
+          scaledA = new fabric.Point(A.x * options.scaleX, A.y * options.scaleY)
+          scaledB = new fabric.Point(B.x * options.scaleX, B.y * options.scaleY)
+          scaledC = new fabric.Point(C.x * options.scaleX, C.y * options.scaleY)
+          bisector = fabric.util.getBisector(scaledA, scaledB, scaledC)
+        } else {
+          bisector = fabric.util.getBisector(A, B, C)
+        }
+        
+        var bisectorVector = bisector.vector,
             alpha = bisector.angle,
             scalar,
             miterVector;
         if (options.strokeLineJoin === 'miter') {
-          scalar = -s / Math.sin(alpha / 2);
+          // if (options.strokeUniform) {
+          //   const scaledS = Math.hypot((s*Math.cos(alpha/2))*options.scaleX , (s*Math.sin(alpha/2))*options.scaleY)
+          //   console.log('s', s, 'scaleS', scaledS, 'alpha', alpha, 'scaleX', options.scaleX, 'scaleY', options.scaleY)
+          //   scalar = -scaledS / Math.sin(alpha / 2);
+          // } else {
+            scalar = -s / Math.sin(alpha / 2);
+          // }
           miterVector = new fabric.Point(
             bisectorVector.x * scalar * strokeUniformScalar.x,
             bisectorVector.y * scalar * strokeUniformScalar.y
@@ -255,17 +282,20 @@
           if (Math.hypot(miterVector.x, miterVector.y) / s <= options.strokeMiterLimit) {
             coords.push(A.add(miterVector));
             coords.push(A.subtract(miterVector));
+            console.log('earlier return', 'strokeLineJoin', options.strokeLineJoin, 'alpha', alpha, 'A', A, 'miterVector', miterVector, 'scalar', scalar, 'bisectorVector.x', bisectorVector.x, 'bisectorVector.y', bisectorVector.y)
             return;
           }
         }
-        scalar = -s * Math.SQRT2;
+        scalar = -s * Math.SQRT2; // alpha = 45 deg?
         miterVector = new fabric.Point(
           bisectorVector.x * scalar * strokeUniformScalar.x,
           bisectorVector.y * scalar * strokeUniformScalar.y
         );
+        console.log('strokeLineJoin', options.strokeLineJoin, 'alpha', alpha, 'A', A, 'miterVector', miterVector, 'scalar', scalar, 'bisectorVector.x', bisectorVector.x, 'bisectorVector.y', bisectorVector.y)
         coords.push(A.add(miterVector));
         coords.push(A.subtract(miterVector));
       });
+      console.log('final coords', coords)
       return coords;
     },
 
