@@ -848,9 +848,9 @@ fabric.CommonMethods = {
 
         var bisector
         if (options.strokeUniform) {
-          scaledA = new fabric.Point(A.x * options.scaleX, A.y * options.scaleY)
-          scaledB = new fabric.Point(B.x * options.scaleX, B.y * options.scaleY)
-          scaledC = new fabric.Point(C.x * options.scaleX, C.y * options.scaleY)
+          let scaledA = new fabric.Point(A.x * options.scaleX, A.y * options.scaleY),
+              scaledB = new fabric.Point(B.x * options.scaleX, B.y * options.scaleY),
+              scaledC = new fabric.Point(C.x * options.scaleX, C.y * options.scaleY)
           bisector = fabric.util.getBisector(scaledA, scaledB, scaledC)
         } else {
           bisector = fabric.util.getBisector(A, B, C)
