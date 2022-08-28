@@ -506,12 +506,20 @@
     
     function renderStrokeTest(canvas, testOptions, polyOptions) {
       var scale = new fabric.Point(4, 5);
-      var v = new fabric.Point(100, 0);
-      var v1 = fabric.util.rotateVector(v, fabric.util.degreesToRadians(testOptions.angle));
-      var A = canvas.getVpCenter();
-      var B = A.subtract(v);
-      var C = A.subtract(v1);
-      var poly = new testOptions.builder([B, A, C], {
+      var points;
+
+      if (polyOptions.points) {
+        points = polyOptions.points;
+      } else {
+        var v = new fabric.Point(100, 0);
+        var v1 = fabric.util.rotateVector(v, fabric.util.degreesToRadians(testOptions.angle));
+        var A = canvas.getVpCenter();
+        var B = A.subtract(v);
+        var C = A.subtract(v1);
+        points = [B, A, C];
+      };
+
+      var poly = new testOptions.builder(points, {
         fill: `rgb(255, 0, 0)`,
         strokeWidth: 10,
         stroke: 'rgb(120, 0, 0)',
@@ -531,7 +539,9 @@
         top: poly.top,
         originX: poly.originX,
         originY: poly.originY,
-        fill: 'blue'
+        fill: 'rgb(0, 0, 255)',
+        stroke: 'rgb(0, 0, 255)',
+        strokeWidth: 0
       });
       canvas.add(bg, poly);
       canvas.setActiveObject(poly);
@@ -544,13 +554,14 @@
 
     let newModule = true;
 
+    // Convex
     for (let angle = 0, step = 15; angle < 360; angle += step) {
       [fabric.Polyline, fabric.Polygon].forEach((builder) => {
         var type = builder.prototype.type;
         ['miter', 'round', 'bevel'].forEach((strokeLineJoin) => {
           [true, false].forEach((strokeUniform) => {
             tests.push({
-              test: `${type} with strokeLineJoin=${strokeLineJoin}, strokeUniform=${strokeUniform} and angle=${angle} values`,
+              test: `Convex ${type} with strokeLineJoin=${strokeLineJoin}, strokeUniform=${strokeUniform} and angle=${angle} values`,
               code: function (canvas, callback) {
                 renderStrokeTest(canvas,
                   {
@@ -564,7 +575,7 @@
                 );
                 callback(canvas.lowerCanvasEl);
               },
-              golden: `stroke-projection/${strokeLineJoin}/${strokeUniform ? 'uniform-' : ''}${type}-${angle}deg.png`,
+              golden: `stroke-projection/convex/${strokeLineJoin}/${strokeUniform ? 'uniform-' : ''}${type}-${angle}deg.png`,
               percentage: 0.001,
               width: 600,
               height: 900,
@@ -589,7 +600,7 @@
         [4, 16].forEach((strokeMiterLimit) => {
           [true, false].forEach((strokeUniform) => {
             tests.push({
-              test: `${type} with strokeMiterLimit=${strokeMiterLimit}, strokeUniform=${strokeUniform} and angle=${angle} values`,
+              test: `Convex ${type} with strokeMiterLimit=${strokeMiterLimit}, strokeUniform=${strokeUniform} and angle=${angle} values`,
               code: function (canvas, callback) {
                 renderStrokeTest(canvas,
                   {
@@ -604,7 +615,7 @@
                 );
                 callback(canvas.lowerCanvasEl);
               },
-              golden: `stroke-projection/miter-limit/${strokeUniform ? 'uniform-' : ''}${type}-miter${strokeMiterLimit}-${angle}deg.png`,
+              golden: `stroke-projection/convex/miter-limit/${strokeUniform ? 'uniform-' : ''}${type}-miter${strokeMiterLimit}-${angle}deg.png`,
               percentage: 0.001,
               width: 600,
               height: 900,
@@ -614,6 +625,100 @@
         });
       });
     }
+
+    // Concave
+    var concave1 = [
+      { x: 0, y: 0 },
+      { x: 18, y: -2.7 },
+      { x: -3.2, y: 11.2 },
+      { x: 19.5, y: 12 },
+      { x: -3.4, y: 1.2 },
+      { x: 6.1, y: 15.3 },
+      { x: 9.5, y: 1 },
+      { x: 14.3, y: 15.1 },
+      { x: 2.7, y: -1.8 }
+    ], concave2 = [
+      { x: 3, y: 4 },
+      { x: 16, y: 60 },
+      { x: 30, y: 5 },
+      { x: 25, y: 40 }
+    ], concave3 = [
+      { x: 3, y: 4 },
+      { x: 16, y: 50 },
+      { x: 16.1665, y: 34.1652 },
+      { x: 25, y: 40 }
+    ], concave4 = [
+      { x: 3, y: 4 },
+      { x: -52.583, y: 12.9152 },
+      { x: 30 , y: 5 },
+      { x: 25, y: 40 }
+    ];
+
+    [concave1, concave2, concave3, concave4].forEach((points, idx) => {
+      [fabric.Polyline, fabric.Polygon].forEach((builder) => {
+        var type = builder.prototype.type;
+        ['miter', 'round', 'bevel'].forEach((strokeLineJoin) => {
+          [true, false].forEach((strokeUniform) => {
+            tests.push({
+              test: `Concave ${type} with strokeLineJoin=${strokeLineJoin} and strokeUniform=${strokeUniform}`,
+              code: function (canvas, callback) {
+                renderStrokeTest(canvas,
+                  {
+                    builder
+                  },
+                  {
+                    strokeLineJoin,
+                    strokeUniform,
+                    points
+                  }
+                );
+                callback(canvas.lowerCanvasEl);
+              },
+              golden: `stroke-projection/concave/${strokeLineJoin}/${strokeUniform ? 'uniform-' : ''}${type}-concave${idx + 1}.png`,
+              percentage: 0.001,
+              width: 600,
+              height: 900,
+              fabricClass: 'Canvas',
+              newModule: newModule ? 'stroke projection' : undefined,
+            });
+            newModule = false;
+          });
+        });
+      });
+    });
+
+    [concave1, concave2, concave3, concave4].forEach((points, idx) => {
+      [fabric.Polyline, fabric.Polygon].forEach((builder) => {
+        var type = builder.prototype.type;
+        [4, 16].forEach((strokeMiterLimit) => {
+          [true, false].forEach((strokeUniform) => {
+            tests.push({
+              test: `Concave ${type} with strokeMiterLimit=${strokeMiterLimit} and strokeUniform=${strokeUniform}`,
+              code: function (canvas, callback) {
+                renderStrokeTest(canvas,
+                  {
+                    builder
+                  },
+                  {
+                    strokeLineJoin: 'miter',
+                    strokeUniform,
+                    strokeMiterLimit,
+                    points
+                  }
+                );
+                callback(canvas.lowerCanvasEl);
+              },
+              golden: `stroke-projection/concave/miter-limit/${strokeUniform ? 'uniform-' : ''}${type}-miter${strokeMiterLimit}-concave${idx + 1}.png`,
+              percentage: 0.001,
+              width: 600,
+              height: 900,
+              fabricClass: 'Canvas'
+            });
+          });
+        });
+      });
+    });
+
   });
 
   tests.forEach(visualTestLoop(QUnit));
